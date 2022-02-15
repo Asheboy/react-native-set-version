@@ -1,17 +1,27 @@
 #!/usr/bin/env node
+"use strict";
 
+var _chalk = _interopRequireDefault(require("chalk"));
 
-import chalk from 'chalk';
-import fs from 'fs';
-import g2js from 'gradle-to-js/lib/parser';
-import path from 'path';
-import plist from 'plist';
+var _fs = _interopRequireDefault(require("fs"));
 
-import { versionStringToVersion, versionToVersionCode } from './versionUtils';
+var _parser = _interopRequireDefault(require("gradle-to-js/lib/parser"));
 
-const display = console.log; // eslint-disable-line no-console
+var _path = _interopRequireDefault(require("path"));
 
-const paths = {
+var _plist = _interopRequireDefault(require("plist"));
+
+var _versionUtils = require("./versionUtils");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
+var display = console.log; // eslint-disable-line no-console
+
+var paths = {
   androidManifest: './android/app/src/main/AndroidManifest.xml',
   buildGradle: './android/app/build.gradle',
   infoPlist: './ios/<APP_NAME>/Info.plist',
@@ -19,25 +29,28 @@ const paths = {
 };
 
 function getPackageJson() {
-  return JSON.parse(fs.readFileSync(paths.packageJson));
+  return JSON.parse(_fs["default"].readFileSync(paths.packageJson));
 }
 
 function setPackageVersion(versionText) {
-  let packageJSON = null;
+  var packageJSON = null;
+
   try {
     packageJSON = getPackageJson();
-    display(chalk.yellow(`Will set package version to ${chalk.bold.underline(versionText)}`));
+    display(_chalk["default"].yellow("Will set package version to ".concat(_chalk["default"].bold.underline(versionText))));
     packageJSON.version = versionText;
-    fs.writeFileSync(paths.packageJson, `${JSON.stringify(packageJSON, null, '\t')}\n`);
-    display(chalk.green(`Version replaced in ${chalk.bold('package.json')}`));
+
+    _fs["default"].writeFileSync(paths.packageJson, "".concat(JSON.stringify(packageJSON, null, '\t'), "\n"));
+
+    display(_chalk["default"].green("Version replaced in ".concat(_chalk["default"].bold('package.json'))));
   } catch (err) {
-    display(chalk.red(`${chalk.bold.underline('ERROR:')} Cannot find file with name ${path.resolve(paths.packageJson)}`));
+    display(_chalk["default"].red("".concat(_chalk["default"].bold.underline('ERROR:'), " Cannot find file with name ").concat(_path["default"].resolve(paths.packageJson))));
     process.exit(1);
   }
 }
 
 function getIOSVersionInfo(versionText) {
-  let versionInfo = {
+  var versionInfo = {
     currentVersionCode: null,
     currentVersion: null,
     version: null,
@@ -45,117 +58,226 @@ function getIOSVersionInfo(versionText) {
   };
 
   try {
-    const plistInfo = plist.parse(fs.readFileSync(paths.infoPlist, 'utf8'));
-    const currentVersion = versionStringToVersion(plistInfo.CFBundleShortVersionString);
-    const versionCodeParts = plistInfo.CFBundleVersion.toString().split('.');
-    const currentVersionCode = +versionCodeParts[versionCodeParts.length - 1];
-    const version = versionStringToVersion(versionText, currentVersion, currentVersionCode);
+    var plistInfo = _plist["default"].parse(_fs["default"].readFileSync(paths.infoPlist, 'utf8'));
+
+    var currentVersion = (0, _versionUtils.versionStringToVersion)(plistInfo.CFBundleShortVersionString);
+    var versionCodeParts = plistInfo.CFBundleVersion.toString().split('.');
+    var currentVersionCode = +versionCodeParts[versionCodeParts.length - 1];
+    var version = (0, _versionUtils.versionStringToVersion)(versionText, currentVersion, currentVersionCode);
     versionInfo = {
-      currentVersionCode,
-      currentVersion,
-      version,
+      currentVersionCode: currentVersionCode,
+      currentVersion: currentVersion,
+      version: version,
       versionCode: version.build
     };
   } catch (err) {
-    display(chalk.yellowBright(`${chalk.bold.underline('WARNING:')} Cannot find key CFBundleShortVersionString in file ${path.resolve(paths.infoPlist)}. IOS version configuration will be skipped`));
+    display(_chalk["default"].yellowBright("".concat(_chalk["default"].bold.underline('WARNING:'), " Cannot find key CFBundleShortVersionString in file ").concat(_path["default"].resolve(paths.infoPlist), ". IOS version configuration will be skipped")));
   }
+
   return versionInfo;
 }
 
-async function setIosApplicationVersion(versionText) {
-  const { version } = await getIOSVersionInfo(versionText);
-  const bundleVersion = `${version.major}.${version.minor}.${version.patch}.${version.build}`;
-  if (version) {
-    display('');
-    display(chalk.yellow('IOS version info:'));
-    display(version);
-
-    display('');
-
-    display(chalk.yellow(`Will set CFBundleShortVersionString to ${chalk.bold.underline(versionText)}`));
-    display(chalk.yellow(`Will set CFBundleVersion to ${chalk.bold.underline(bundleVersion)}`));
-    try {
-      const plistInfo = plist.parse(fs.readFileSync(paths.infoPlist, 'utf8'));
-      plistInfo.CFBundleShortVersionString = versionText;
-      plistInfo.CFBundleVersion = bundleVersion;
-      fs.writeFileSync(paths.infoPlist, plist.build(plistInfo), 'utf8');
-      display(chalk.green(`Version replaced in ${chalk.bold('Info.plist')}`));
-    } catch (err) {
-      display(chalk.yellowBright(`${chalk.bold.underline('WARNING:')} Cannot find file with name ${path.resolve(paths.infoPlist)}. This file will be skipped`));
-    }
-  }
+function setIosApplicationVersion(_x) {
+  return _setIosApplicationVersion.apply(this, arguments);
 }
 
-async function getAndroidVersionInfo(versionText) {
-  let versionInfo = {
-    currentVersionCode: null,
-    currentVersion: null,
-    version: null,
-    versionCode: null
-  };
-  try {
-    const gradle = await g2js.parseFile(paths.buildGradle);
-    const currentVersion = versionStringToVersion(gradle.android.defaultConfig.versionName);
-    const currentVersionCode = +gradle.android.defaultConfig.versionCode;
-    const version = versionStringToVersion(versionText, currentVersion, currentVersionCode);
-    versionInfo = {
-      currentVersionCode,
-      currentVersion,
-      version,
-      versionCode: versionToVersionCode(version)
-    };
-  } catch (err) {
-    display(chalk.yellowBright(`${chalk.bold.underline('WARNING:')} Cannot find attribute versionCode in file ${path.resolve(paths.buildGradle)}. Android version configuration will be skipped`));
-  }
-  return versionInfo;
-}
+function _setIosApplicationVersion() {
+  _setIosApplicationVersion = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(versionText) {
+    var _yield$getIOSVersionI, version, bundleVersion, plistInfo;
 
-async function setAndroidApplicationVersion(versionText) {
-  const { version, versionCode } = await getAndroidVersionInfo(versionText);
+    return regeneratorRuntime.wrap(function _callee2$(_context2) {
+      while (1) {
+        switch (_context2.prev = _context2.next) {
+          case 0:
+            _context2.next = 2;
+            return getIOSVersionInfo(versionText);
 
-  if (versionCode) {
-    display('');
-    display(chalk.yellow('Android version info:'));
-    display(version);
+          case 2:
+            _yield$getIOSVersionI = _context2.sent;
+            version = _yield$getIOSVersionI.version;
+            bundleVersion = "".concat(version.major, ".").concat(version.minor, ".").concat(version.patch, ".").concat(version.build);
 
-    display('');
+            if (version) {
+              display('');
+              display(_chalk["default"].yellow('IOS version info:'));
+              display(version);
+              display('');
+              display(_chalk["default"].yellow("Will set CFBundleShortVersionString to ".concat(_chalk["default"].bold.underline(versionText))));
+              display(_chalk["default"].yellow("Will set CFBundleVersion to ".concat(_chalk["default"].bold.underline(bundleVersion))));
 
-    display(chalk.yellow(`Will set Android version to ${chalk.bold.underline(versionText)}`));
-    display(chalk.yellow(`Will set Android version code to ${chalk.bold.underline(versionCode)}`));
-    try {
-      const buildGradle = fs.readFileSync(paths.buildGradle, 'utf8');
-      const newBuildGradle = buildGradle.replace(/versionCode \d+/g, `versionCode ${versionCode}`).replace(/versionName "[^"]*"/g, `versionName "${versionText}"`);
+              try {
+                plistInfo = _plist["default"].parse(_fs["default"].readFileSync(paths.infoPlist, 'utf8'));
+                plistInfo.CFBundleShortVersionString = versionText;
+                plistInfo.CFBundleVersion = bundleVersion;
 
-      fs.writeFileSync(paths.buildGradle, newBuildGradle, 'utf8');
-      display(chalk.green(`Version replaced in ${chalk.bold('build.gradle')}`));
-    } catch (err) {
-      display(chalk.yellowBright(`${chalk.bold.underline('WARNING:')} Cannot find file with name ${path.resolve(paths.buildGradle)}. This file will be skipped`));
-    }
+                _fs["default"].writeFileSync(paths.infoPlist, _plist["default"].build(plistInfo), 'utf8');
 
-    try {
-      const androidManifest = fs.readFileSync(paths.androidManifest, 'utf8');
-      if (androidManifest.includes('android:versionCode') || androidManifest.includes('android:versionName')) {
-        const newAndroidManifest = androidManifest.replace(/android:versionCode="\d*"/g, `android:versionCode="${versionCode}"`).replace(/android:versionName="[^"]*"/g, `android:versionName="${versionText}"`);
+                display(_chalk["default"].green("Version replaced in ".concat(_chalk["default"].bold('Info.plist'))));
+              } catch (err) {
+                display(_chalk["default"].yellowBright("".concat(_chalk["default"].bold.underline('WARNING:'), " Cannot find file with name ").concat(_path["default"].resolve(paths.infoPlist), ". This file will be skipped")));
+              }
+            }
 
-        fs.writeFileSync(paths.androidManifest, newAndroidManifest, 'utf8');
-        display(chalk.green(`Version replaced in ${chalk.bold('AndroidManifest.xml')}`));
+          case 6:
+          case "end":
+            return _context2.stop();
+        }
       }
-    } catch (err) {
-      display(chalk.yellowBright(`${chalk.bold.underline('WARNING:')} Cannot find file with name ${path.resolve(paths.androidManifest)}. This file will be skipped`));
-    }
-  }
+    }, _callee2);
+  }));
+  return _setIosApplicationVersion.apply(this, arguments);
 }
 
-const changeVersion = async () => {
-  const versionText = process.argv[2];
-  const { infoPListPath } = getPackageJson();
-  setPackageVersion(versionText);
+function getAndroidVersionInfo(_x2) {
+  return _getAndroidVersionInfo.apply(this, arguments);
+}
 
-  paths.infoPlist = infoPListPath || paths.infoPlist.replace('<APP_NAME>', appName);
-  await setAndroidApplicationVersion(versionText);
-  await setIosApplicationVersion(versionText);
+function _getAndroidVersionInfo() {
+  _getAndroidVersionInfo = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(versionText) {
+    var versionInfo, gradle, currentVersion, currentVersionCode, version;
+    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            versionInfo = {
+              currentVersionCode: null,
+              currentVersion: null,
+              version: null,
+              versionCode: null
+            };
+            _context3.prev = 1;
+            _context3.next = 4;
+            return _parser["default"].parseFile(paths.buildGradle);
 
-  display('');
-};
+          case 4:
+            gradle = _context3.sent;
+            currentVersion = (0, _versionUtils.versionStringToVersion)(gradle.android.defaultConfig.versionName);
+            currentVersionCode = +gradle.android.defaultConfig.versionCode;
+            version = (0, _versionUtils.versionStringToVersion)(versionText, currentVersion, currentVersionCode);
+            versionInfo = {
+              currentVersionCode: currentVersionCode,
+              currentVersion: currentVersion,
+              version: version,
+              versionCode: (0, _versionUtils.versionToVersionCode)(version)
+            };
+            _context3.next = 14;
+            break;
+
+          case 11:
+            _context3.prev = 11;
+            _context3.t0 = _context3["catch"](1);
+            display(_chalk["default"].yellowBright("".concat(_chalk["default"].bold.underline('WARNING:'), " Cannot find attribute versionCode in file ").concat(_path["default"].resolve(paths.buildGradle), ". Android version configuration will be skipped")));
+
+          case 14:
+            return _context3.abrupt("return", versionInfo);
+
+          case 15:
+          case "end":
+            return _context3.stop();
+        }
+      }
+    }, _callee3, null, [[1, 11]]);
+  }));
+  return _getAndroidVersionInfo.apply(this, arguments);
+}
+
+function setAndroidApplicationVersion(_x3) {
+  return _setAndroidApplicationVersion.apply(this, arguments);
+}
+
+function _setAndroidApplicationVersion() {
+  _setAndroidApplicationVersion = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(versionText) {
+    var _yield$getAndroidVers, version, versionCode, buildGradle, newBuildGradle, androidManifest, newAndroidManifest;
+
+    return regeneratorRuntime.wrap(function _callee4$(_context4) {
+      while (1) {
+        switch (_context4.prev = _context4.next) {
+          case 0:
+            _context4.next = 2;
+            return getAndroidVersionInfo(versionText);
+
+          case 2:
+            _yield$getAndroidVers = _context4.sent;
+            version = _yield$getAndroidVers.version;
+            versionCode = _yield$getAndroidVers.versionCode;
+
+            if (versionCode) {
+              display('');
+              display(_chalk["default"].yellow('Android version info:'));
+              display(version);
+              display('');
+              display(_chalk["default"].yellow("Will set Android version to ".concat(_chalk["default"].bold.underline(versionText))));
+              display(_chalk["default"].yellow("Will set Android version code to ".concat(_chalk["default"].bold.underline(versionCode))));
+
+              try {
+                buildGradle = _fs["default"].readFileSync(paths.buildGradle, 'utf8');
+                newBuildGradle = buildGradle.replace(/versionCode \d+/g, "versionCode ".concat(versionCode)).replace(/versionName "[^"]*"/g, "versionName \"".concat(versionText, "\""));
+
+                _fs["default"].writeFileSync(paths.buildGradle, newBuildGradle, 'utf8');
+
+                display(_chalk["default"].green("Version replaced in ".concat(_chalk["default"].bold('build.gradle'))));
+              } catch (err) {
+                display(_chalk["default"].yellowBright("".concat(_chalk["default"].bold.underline('WARNING:'), " Cannot find file with name ").concat(_path["default"].resolve(paths.buildGradle), ". This file will be skipped")));
+              }
+
+              try {
+                androidManifest = _fs["default"].readFileSync(paths.androidManifest, 'utf8');
+
+                if (androidManifest.includes('android:versionCode') || androidManifest.includes('android:versionName')) {
+                  newAndroidManifest = androidManifest.replace(/android:versionCode="\d*"/g, "android:versionCode=\"".concat(versionCode, "\"")).replace(/android:versionName="[^"]*"/g, "android:versionName=\"".concat(versionText, "\""));
+
+                  _fs["default"].writeFileSync(paths.androidManifest, newAndroidManifest, 'utf8');
+
+                  display(_chalk["default"].green("Version replaced in ".concat(_chalk["default"].bold('AndroidManifest.xml'))));
+                }
+              } catch (err) {
+                display(_chalk["default"].yellowBright("".concat(_chalk["default"].bold.underline('WARNING:'), " Cannot find file with name ").concat(_path["default"].resolve(paths.androidManifest), ". This file will be skipped")));
+              }
+            }
+
+          case 6:
+          case "end":
+            return _context4.stop();
+        }
+      }
+    }, _callee4);
+  }));
+  return _setAndroidApplicationVersion.apply(this, arguments);
+}
+
+var changeVersion = /*#__PURE__*/function () {
+  var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+    var versionText, _getPackageJson, infoPListPath;
+
+    return regeneratorRuntime.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            versionText = process.argv[2];
+            _getPackageJson = getPackageJson(), infoPListPath = _getPackageJson.infoPListPath;
+            setPackageVersion(versionText);
+            paths.infoPlist = infoPListPath || paths.infoPlist.replace('<APP_NAME>', appName);
+            _context.next = 6;
+            return setAndroidApplicationVersion(versionText);
+
+          case 6:
+            _context.next = 8;
+            return setIosApplicationVersion(versionText);
+
+          case 8:
+            display('');
+
+          case 9:
+          case "end":
+            return _context.stop();
+        }
+      }
+    }, _callee);
+  }));
+
+  return function changeVersion() {
+    return _ref.apply(this, arguments);
+  };
+}();
 
 changeVersion();
