@@ -27,7 +27,7 @@ function setPackageVersion(versionText) {
     packageJSON = getPackageJson()
     display(chalk.yellow(`Will set package version to ${chalk.bold.underline(versionText)}`));
     packageJSON.version = versionText;
-    fs.writeFileSync(paths.packageJson, `${JSON.stringify(packageJSON, null, '\t')}\n`);
+    fs.writeFileSync(paths.packageJson, `${JSON.stringify(packageJSON, null, 2)}`);
     display(chalk.green(`Version replaced in ${chalk.bold('package.json')}`));
   } catch (err) {
     display(chalk.red(`${chalk.bold.underline('ERROR:')} Cannot find file with name ${path.resolve(paths.packageJson)}`));

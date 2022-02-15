@@ -36,7 +36,7 @@ function setPackageVersion(versionText) {
     display(_chalk.default.yellow(`Will set package version to ${_chalk.default.bold.underline(versionText)}`));
     packageJSON.version = versionText;
 
-    _fs.default.writeFileSync(paths.packageJson, `${JSON.stringify(packageJSON, null, '\t')}\n`);
+    _fs.default.writeFileSync(paths.packageJson, `${JSON.stringify(packageJSON, null, 2)}`);
 
     display(_chalk.default.green(`Version replaced in ${_chalk.default.bold('package.json')}`));
   } catch (err) {
