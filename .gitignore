@@ -34,9 +34,6 @@ bower_components
 # node-waf configuration
 .lock-wscript
 
-# Compiled binary addons (https://nodejs.org/api/addons.html)
-build/Release
-
 # Dependency directories
 node_modules/
 jspm_packages/
@@ -83,7 +80,3 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
-
-# End of https://www.gitignore.io/api/node
-
-build/
